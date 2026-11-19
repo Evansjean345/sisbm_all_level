@@ -3,6 +3,7 @@ import type { AuditLogListParams } from "@/types/audit";
 import type { DeviceListParams } from "@/types/device";
 import type { DriverListParams } from "@/types/driver";
 import type { GroupKind, GroupListParams } from "@/types/group";
+import type { OfferListParams } from "@/types/offer";
 import type { OrganizationListParams } from "@/types/organization";
 import type { ScheduleHistoryParams, ScheduleListParams } from "@/types/schedule";
 import type { UserListParams } from "@/types/user";
@@ -83,6 +84,13 @@ export const queryKeys = {
     list: (params: DriverListParams) => ["drivers", "list", params] as const,
     detail: (id: string) => ["drivers", "detail", id] as const,
     ofVehicle: (vehicleId: string) => ["drivers", "vehicle", vehicleId] as const,
+  },
+  offers: {
+    all: ["offers"] as const,
+    // Hors du préfixe « offers » : une écriture sur une offre ne relit pas le catalogue.
+    features: ["offer-features"] as const,
+    list: (params: OfferListParams) => ["offers", "list", params] as const,
+    detail: (id: string) => ["offers", "detail", id] as const,
   },
   /** Une seule entrée pour les trois familles : la clé porte le type de groupe. */
   groups: {

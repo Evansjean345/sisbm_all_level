@@ -39,6 +39,7 @@ const RESOURCES: Record<string, string> = {
   immobilization: "immobilisation",
   alert: "alerte",
   incident: "incident",
+  offer: "offre",
 };
 
 const VERBS: Record<string, string> = {

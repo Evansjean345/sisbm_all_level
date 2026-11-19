@@ -11,6 +11,7 @@ export {
   type GroupService,
   vehicleGroupService,
 } from "@/services/group.service";
+export { offerService } from "@/services/offer.service";
 export { organizationService } from "@/services/organization.service";
 export { roleService } from "@/services/role.service";
 export { scheduleService } from "@/services/schedule.service";
