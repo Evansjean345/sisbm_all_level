@@ -48,6 +48,7 @@ export type AuditResourceType =
   | "geofence"
   | "policy"
   | "offer"
+  | "subscription"
   | (string & {});
 
 export interface AuditLogEntry {

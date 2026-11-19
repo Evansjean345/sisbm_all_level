@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 
-import { Archive, Building2, MoreVertical, Pencil, Rocket, Trash2 } from "lucide-react";
+import Link from "next/link";
+
+import { Archive, FileSignature, MoreVertical, Pencil, Rocket, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -20,9 +22,8 @@ import { getErrorMessage } from "@/lib/axios";
 import type { Offer, OfferStatus } from "@/types/offer";
 
 import { OfferFormDialog } from "./offer-form-dialog";
-import { OfferOrganizationsDialog } from "./offer-organizations-dialog";
 
-type DialogKind = "edit" | "activate" | "organizations" | "delete";
+type DialogKind = "edit" | "activate" | "delete";
 
 export function OfferRowActions({ offer }: { offer: Offer }) {
   const [dialog, setDialog] = useState<DialogKind | null>(null);
@@ -71,12 +72,14 @@ export function OfferRowActions({ offer }: { offer: Offer }) {
                 Commercialiser
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem onClick={() => setDialog("organizations")}>
-              <Building2 />
-              Gérer les organisations
-              {offer.organizationsCount ? (
-                <span className="ml-auto text-muted-foreground text-xs">{offer.organizationsCount}</span>
-              ) : null}
+            <DropdownMenuItem asChild>
+              <Link href={`/dashboard/subscriptions?offerId=${offer.id}`} prefetch={false}>
+                <FileSignature />
+                Voir les souscriptions
+                {offer.stats.subscriptions ? (
+                  <span className="ml-auto text-muted-foreground text-xs">{offer.stats.subscriptions}</span>
+                ) : null}
+              </Link>
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
@@ -93,14 +96,13 @@ export function OfferRowActions({ offer }: { offer: Offer }) {
         activate={dialog === "activate"}
         onOpenChange={close}
       />
-      <OfferOrganizationsDialog offer={offer} open={dialog === "organizations"} onOpenChange={close} />
       <ConfirmDialog
         open={dialog === "delete"}
         onOpenChange={close}
         title={`Supprimer l'offre ${offer.name} ?`}
         description={
-          offer.organizationsCount
-            ? `Suppression logique : ${offer.organizationsCount} organisation${offer.organizationsCount > 1 ? "s n'auront" : " n'aura"} plus d'offre. L'historique reste dans le journal d'audit.`
+          offer.stats.subscriptions
+            ? `${offer.stats.subscriptions} souscription(s) utilisent cette offre : la suppression sera refusée. Retirez-la plutôt du catalogue.`
             : "Suppression logique : l'offre sort du catalogue mais reste lisible dans le journal d'audit."
         }
         confirmLabel="Supprimer"

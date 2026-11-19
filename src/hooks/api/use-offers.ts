@@ -4,7 +4,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 
 import { queryKeys } from "@/hooks/api/query-keys";
 import { offerService } from "@/services/offer.service";
-import type { CreateOfferPayload, OfferListParams, UpdateOfferPayload } from "@/types/offer";
+import { type CreateOfferPayload, compareOffers, type OfferListParams, type UpdateOfferPayload } from "@/types/offer";
 
 /** Offres commerciales (plateforme). Toute écriture relit listes et détails. */
 function useInvalidateOffers() {
@@ -25,6 +25,8 @@ export function useOffers(params: OfferListParams = {}, options: { enabled?: boo
   return useQuery({
     queryKey: queryKeys.offers.list(params),
     queryFn: () => offerService.list(params),
+    // Ordre du catalogue partout (cartes, matrice, listes) : Standard, Gold, Premium, Platinum, puis les autres.
+    select: (page) => ({ ...page, data: [...page.data].sort(compareOffers) }),
     enabled: options.enabled ?? true,
     placeholderData: keepPreviousData,
   });
@@ -58,22 +60,4 @@ export function useUpdateOffer() {
 export function useDeleteOffer() {
   const invalidate = useInvalidateOffers();
   return useMutation({ mutationFn: (id: string) => offerService.remove(id), onSuccess: invalidate });
-}
-
-export function useAttachOfferOrganizations() {
-  const invalidate = useInvalidateOffers();
-  return useMutation({
-    mutationFn: ({ id, organizationIds, move }: { id: string; organizationIds: string[]; move?: boolean }) =>
-      offerService.attachOrganizations(id, organizationIds, move),
-    onSuccess: invalidate,
-  });
-}
-
-export function useDetachOfferOrganization() {
-  const invalidate = useInvalidateOffers();
-  return useMutation({
-    mutationFn: ({ id, organizationId }: { id: string; organizationId: string }) =>
-      offerService.detachOrganization(id, organizationId),
-    onSuccess: invalidate,
-  });
 }

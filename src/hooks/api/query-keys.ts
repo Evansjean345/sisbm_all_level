@@ -6,6 +6,7 @@ import type { GroupKind, GroupListParams } from "@/types/group";
 import type { OfferListParams } from "@/types/offer";
 import type { OrganizationListParams } from "@/types/organization";
 import type { ScheduleHistoryParams, ScheduleListParams } from "@/types/schedule";
+import type { SubscriptionListParams } from "@/types/subscription";
 import type { UserListParams } from "@/types/user";
 import type { VehicleListParams } from "@/types/vehicle";
 
@@ -91,6 +92,10 @@ export const queryKeys = {
     features: ["offer-features"] as const,
     list: (params: OfferListParams) => ["offers", "list", params] as const,
     detail: (id: string) => ["offers", "detail", id] as const,
+  },
+  subscriptions: {
+    all: ["subscriptions"] as const,
+    list: (params: SubscriptionListParams) => ["subscriptions", "list", params] as const,
   },
   /** Une seule entrée pour les trois familles : la clé porte le type de groupe. */
   groups: {

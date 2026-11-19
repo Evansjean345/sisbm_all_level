@@ -15,5 +15,6 @@ export { offerService } from "@/services/offer.service";
 export { organizationService } from "@/services/organization.service";
 export { roleService } from "@/services/role.service";
 export { scheduleService } from "@/services/schedule.service";
+export { subscriptionService } from "@/services/subscription.service";
 export { userService } from "@/services/user.service";
 export { vehicleService } from "@/services/vehicle.service";

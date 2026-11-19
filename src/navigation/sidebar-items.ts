@@ -97,12 +97,13 @@ export const sidebarItems: NavGroup[] = [
             url: "/dashboard/fleet",
             icon: MapPinned,
           },
+          /*
           {
             id: "client-offers",
             title: "Attribution des offres",
             url: "/dashboard/client-offers",
             icon: PackagePlus,
-          },
+          }, */
           {
             id: "subscriptions",
             title: "Gestion des souscriptions",

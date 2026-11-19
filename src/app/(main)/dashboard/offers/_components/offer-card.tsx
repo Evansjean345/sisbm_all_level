@@ -2,14 +2,13 @@ import { StatusBadge } from "@/components/status-badge";
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatDate, formatNumber } from "@/lib/format";
-import { type Offer, offerPeriodicityMeta, offerStatusMeta } from "@/types/offer";
+import { type Offer, offerStatusMeta } from "@/types/offer";
 
 import { OfferRowActions } from "./offer-row-actions";
 import { formatLimit, formatOfferPrice, launchLabel } from "./offer-utils";
 
 export function OfferCard({ offer, featureCount }: { offer: Offer; featureCount: number }) {
   const meta = offerStatusMeta[offer.status] ?? { label: offer.status, tone: "neutral" as const };
-  const organizations = offer.organizations;
 
   return (
     <Card className="h-full">
@@ -24,24 +23,25 @@ export function OfferCard({ offer, featureCount }: { offer: Offer; featureCount:
         <div className="flex flex-col gap-1">
           <span className="font-medium text-lg tabular-nums">{formatOfferPrice(offer)}</span>
           <span className="text-muted-foreground text-xs">
-            Facturation {offerPeriodicityMeta[offer.periodicity]?.label.toLowerCase() ?? offer.periodicity}
+            par véhicule ·{" "}
+            {offer.maxVehicles === null ? "véhicules illimités" : `${formatNumber(offer.maxVehicles)} véhicules max.`}
           </span>
         </div>
         {offer.description ? <p className="text-muted-foreground text-sm">{offer.description}</p> : null}
 
         <dl className="grid grid-cols-2 gap-3 text-sm">
           <div className="flex flex-col gap-0.5">
-            <dt className="text-muted-foreground text-xs">Organisations</dt>
+            <dt className="text-muted-foreground text-xs">Souscriptions</dt>
             <dd className="tabular-nums">
-              {organizations.length === 0 ? (
-                <span className="text-muted-foreground">Aucune</span>
+              {offer.organizations.length === 0 ? (
+                formatNumber(offer.stats.subscriptions)
               ) : (
                 <Tooltip>
                   <TooltipTrigger className="cursor-help underline decoration-dotted underline-offset-4">
-                    {formatNumber(organizations.length)}
+                    {formatNumber(offer.stats.subscriptions)}
                   </TooltipTrigger>
                   <TooltipContent side="bottom" className="flex flex-col gap-0.5">
-                    {organizations.map((g) => (
+                    {offer.organizations.map((g) => (
                       <span key={g.id}>{g.name}</span>
                     ))}
                   </TooltipContent>
@@ -50,13 +50,13 @@ export function OfferCard({ offer, featureCount }: { offer: Offer; featureCount:
             </dd>
           </div>
           <div className="flex flex-col gap-0.5">
-            <dt className="text-muted-foreground text-xs">Véhicules max.</dt>
-            <dd className="tabular-nums">{formatLimit(offer.maxVehicles, "véhicules")}</dd>
+            <dt className="text-muted-foreground text-xs">Véhicules</dt>
+            <dd className="tabular-nums">{formatNumber(offer.stats.vehicles)}</dd>
           </div>
           <div className="flex flex-col gap-0.5">
             <dt className="text-muted-foreground text-xs">Fonctionnalités</dt>
             <dd className="tabular-nums">
-              {offer.features.length} / {featureCount}
+              {offer.featureKeys.length} / {featureCount}
             </dd>
           </div>
           <div className="flex flex-col gap-0.5">

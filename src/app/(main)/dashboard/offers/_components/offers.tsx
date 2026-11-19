@@ -13,10 +13,11 @@ import { useOfferFeatures, useOffers } from "@/hooks/api/use-offers";
 import { FeatureMatrix } from "./feature-matrix";
 import { OfferCard } from "./offer-card";
 import { OfferFormDialog } from "./offer-form-dialog";
+import { countSubFeatures } from "./offer-utils";
 
 /**
- * Catalogue des offres : cartes (tarif, organisations, limites, statut) puis
- * matrice modules × offres. Tout vient de l'API (`/admin/offers`,
+ * Catalogue des offres : cartes (tarif, souscriptions, véhicules, statut) puis
+ * matrice fonctionnalités × offres. Tout vient de l'API (`/admin/offers`,
  * `/admin/offers/features`).
  */
 export function Offers() {
@@ -25,7 +26,8 @@ export function Offers() {
   const features = useOfferFeatures();
 
   const rows = offers.data?.data ?? [];
-  const featureList = features.data ?? [];
+  const catalogue = features.data ?? [];
+  const featureCount = countSubFeatures(catalogue);
   const pending = offers.isPending || features.isPending;
   const error = offers.isError ? offers : features.isError ? features : null;
 
@@ -79,10 +81,10 @@ export function Offers() {
         <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {rows.map((offer) => (
-              <OfferCard key={offer.id} offer={offer} featureCount={featureList.length} />
+              <OfferCard key={offer.id} offer={offer} featureCount={featureCount} />
             ))}
           </div>
-          <FeatureMatrix offers={rows} features={featureList} />
+          <FeatureMatrix offers={rows} catalogue={catalogue} />
         </>
       )}
 

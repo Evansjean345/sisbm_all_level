@@ -46,7 +46,7 @@ import {
   type UpdateOfferPayload,
 } from "@/types/offer";
 
-import { groupFeaturesByModule } from "./offer-utils";
+import { countSubFeatures } from "./offer-utils";
 
 const schema = z
   .object({
@@ -64,7 +64,7 @@ const schema = z
     periodicity: z.enum(OFFER_PERIODICITIES),
     status: z.enum(OFFER_STATUSES),
     launchedOn: z.string(),
-    features: z.array(z.string()),
+    featureKeys: z.array(z.string()),
     /** Vide = illimité. */
     maxVehicles: z
       .string()
@@ -95,7 +95,7 @@ function toDefaults(offer?: Offer, activate = false): FormInput {
     periodicity: offer?.periodicity ?? "monthly",
     status: activate ? "active" : (offer?.status ?? "inactive"),
     launchedOn: offer?.launchedOn?.slice(0, 10) ?? "",
-    features: offer?.features ?? [],
+    featureKeys: offer?.featureKeys ?? [],
     maxVehicles: offer?.maxVehicles ? String(offer.maxVehicles) : "",
     gpsHistoryDays: String(offer?.gpsHistoryDays ?? GPS_HISTORY_DAYS.default),
   };
@@ -139,7 +139,7 @@ export function OfferFormDialog({
       status: values.status,
       maxVehicles: values.maxVehicles === "" ? null : Number(values.maxVehicles),
       gpsHistoryDays: Number(values.gpsHistoryDays),
-      features: values.features,
+      featureKeys: values.featureKeys,
     };
     const handlers = {
       onSuccess: () => {
@@ -166,7 +166,7 @@ export function OfferFormDialog({
     }
   }
 
-  const modules = groupFeaturesByModule(features.data ?? []);
+  const catalogue = features.data ?? [];
 
   return (
     <Dialog open={open} onOpenChange={(next) => !pending && onOpenChange(next)}>
@@ -174,8 +174,8 @@ export function OfferFormDialog({
         <DialogHeader>
           <DialogTitle>{offer ? `Modifier l'offre ${offer.name}` : "Nouvelle offre"}</DialogTitle>
           <DialogDescription>
-            Les fonctionnalités cochées définissent les pages du tableau de bord Admin ouvertes aux organisations qui
-            détiennent l'offre.
+            Les sous-fonctionnalités cochées définissent les pages du tableau de bord du distributeur ouvertes aux
+            organisations qui souscrivent l'offre.
           </DialogDescription>
         </DialogHeader>
 
@@ -237,7 +237,7 @@ export function OfferFormDialog({
                       placeholder="15000"
                       aria-invalid={fieldState.invalid}
                     />
-                    <FieldDescription>Par période de facturation.</FieldDescription>
+                    <FieldDescription>Par véhicule et par période.</FieldDescription>
                     {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
                   </Field>
                 )}
@@ -361,7 +361,7 @@ export function OfferFormDialog({
 
             <Controller
               control={form.control}
-              name="features"
+              name="featureKeys"
               render={({ field }) => {
                 const selected = new Set(field.value);
                 const toggle = (key: string, checked: boolean) => {
@@ -373,7 +373,7 @@ export function OfferFormDialog({
                 return (
                   <FieldSet>
                     <FieldLegend variant="label">
-                      Fonctionnalités incluses ({selected.size}/{features.data?.length ?? 0})
+                      Fonctionnalités incluses ({selected.size}/{countSubFeatures(catalogue)})
                     </FieldLegend>
                     {features.isPending ? (
                       <p className="text-muted-foreground text-sm">Chargement du catalogue…</p>
@@ -381,12 +381,12 @@ export function OfferFormDialog({
                       <p className="text-destructive text-sm">{getErrorMessage(features.error)}</p>
                     ) : (
                       <div className="grid gap-x-6 gap-y-4 rounded-lg border p-4 sm:grid-cols-2">
-                        {modules.map(({ module, items }) => (
-                          <div key={module} className="flex flex-col gap-2">
+                        {catalogue.map(({ id, name, subFeatures }) => (
+                          <div key={id} className="flex flex-col gap-2">
                             <span className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-                              {module}
+                              {name}
                             </span>
-                            {items.map((feature) => (
+                            {subFeatures.map((feature) => (
                               <Field key={feature.key} orientation="horizontal" className="items-start gap-2">
                                 <Checkbox
                                   id={`feature-${feature.key}`}

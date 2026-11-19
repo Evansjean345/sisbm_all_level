@@ -40,6 +40,7 @@ const RESOURCES: Record<string, string> = {
   alert: "alerte",
   incident: "incident",
   offer: "offre",
+  subscription: "souscription",
 };
 
 const VERBS: Record<string, string> = {
@@ -62,6 +63,7 @@ const VERBS: Record<string, string> = {
   login: "connexion",
   logout: "déconnexion",
   cancelled: "annulation",
+  status_changed: "changement de statut",
   // conducteurs
   organization_assigned: "rattachement à une organisation",
   organization_removed: "retrait de l'organisation",

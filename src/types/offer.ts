@@ -2,16 +2,17 @@ import type { StatusTone } from "@/components/status-badge";
 import type { PaginationParams } from "@/types/api";
 
 /**
- * Catalogue des offres (migrations 022 à 025) — routes `/admin/offers/*`,
+ * Catalogue des offres (migrations 022 à 027) — routes `/admin/offers/*`,
  * réservées à l'exploitant (niveau 1).
  *
- * Les fonctionnalités ne sont PAS codées en dur ici : le catalogue
- * (modules → fonctionnalités, chacune ouvrant une page du tableau de bord
- * Admin) vient de `GET /admin/offers/features`, et chaque offre porte la liste
- * des clés qu'elle autorise (matrice modules × offres).
+ * Le catalogue n'est PAS codé en dur : fonctionnalités → sous-fonctionnalités
+ * (chacune ouvrant une page du tableau de bord du distributeur) viennent de
+ * `GET /admin/offers/features`. Chaque offre porte les clés qu'elle autorise
+ * (matrice fonctionnalités × offres).
  *
- * Une offre est partagée par PLUSIEURS organisations ; une organisation ne
- * détient qu'UNE offre à la fois.
+ * Les organisations accèdent aux offres par des SOUSCRIPTIONS (une par groupe
+ * de véhicules) : voir `@/types/subscription`. Quatre offres sont
+ * prédéfinies (Standard, Gold, Premium, Platinum) ; toutes sont modifiables.
  */
 
 export const OFFER_STATUSES = ["active", "inactive"] as const;
@@ -30,29 +31,38 @@ export const offerPeriodicityMeta: Record<OfferPeriodicity, { label: string; sho
   annual: { label: "Annuelle", short: "an" },
 };
 
+/**
+ * Ordre d'affichage des offres prédéfinies, par code. Les offres
+ * personnalisées viennent ensuite, par ordre alphabétique.
+ */
+export const OFFER_DISPLAY_ORDER = ["STANDARD", "GOLD", "PREMIUM", "PLATINUM"] as const;
+
+/** Trie : Standard, Gold, Premium, Platinum, puis les autres offres par nom. */
+export function compareOffers(a: Pick<Offer, "code" | "name">, b: Pick<Offer, "code" | "name">): number {
+  const rank = (code: string) => {
+    const i = (OFFER_DISPLAY_ORDER as readonly string[]).indexOf(code.toUpperCase());
+    return i === -1 ? OFFER_DISPLAY_ORDER.length : i;
+  };
+  return rank(a.code) - rank(b.code) || a.name.localeCompare(b.name, "fr");
+}
+
 /** Code : lettres, chiffres, `-` et `_`, 2 à 40 caractères (stocké en majuscules). */
 export const OFFER_CODE_PATTERN = /^[A-Z0-9][A-Z0-9_-]{1,39}$/;
 export const GPS_HISTORY_DAYS = { min: 1, max: 3650, default: 30 } as const;
 
-/** Une fonctionnalité vendable (ligne de la matrice), telle que l'API la décrit. */
-export interface OfferFeature {
+/** Sous-fonctionnalité : une page du tableau de bord du distributeur (ligne de la matrice). */
+export interface SubFeature {
+  id: number;
   key: string;
   label: string;
-  /** Module de rattachement, pour grouper les lignes (même découpage que le menu). */
-  module: string;
-  /** Page du tableau de bord Admin ouverte par la fonctionnalité. */
   path: string;
 }
 
-/** Organisation détentrice d'une offre. */
-export interface OfferOrganization {
-  id: string;
-  code: string;
+/** Fonctionnalité du catalogue : un nom et ses sous-fonctionnalités (même découpage que le menu). */
+export interface Feature {
+  id: number;
   name: string;
-  isActive: boolean;
-  assignedAt: string;
-  /** Véhicules de l'organisation — présent dans le DÉTAIL d'une offre (quota). */
-  vehicles?: number;
+  subFeatures: SubFeature[];
 }
 
 export interface Offer {
@@ -60,7 +70,7 @@ export interface Offer {
   code: string;
   name: string;
   description: string | null;
-  /** `numeric(14,2)` sérialisé en chaîne : « 25000.00 ». Montant par période. */
+  /** `numeric(14,2)` sérialisé en chaîne : « 15000.00 ». Prix de référence par véhicule et par période. */
   price: string;
   currency: string;
   periodicity: OfferPeriodicity;
@@ -70,35 +80,32 @@ export interface Offer {
   /** `null` = véhicules illimités. */
   maxVehicles: number | null;
   gpsHistoryDays: number;
-  /** Clés des fonctionnalités incluses (voir `OfferFeature.key`). */
-  features: string[];
-  /** Pages du tableau de bord Admin ouvertes par l'offre. */
+  /** Clés des sous-fonctionnalités incluses (voir `SubFeature.key`). */
+  featureKeys: string[];
+  /** Les mêmes, rangées sous leur fonctionnalité (sous-objets). */
+  features: Feature[];
+  /** Pages du tableau de bord du distributeur ouvertes par l'offre. */
   paths: string[];
-  organizations: OfferOrganization[];
+  /** Calculées à partir des souscriptions non résiliées. */
+  stats: {
+    subscriptions: number;
+    activeSubscriptions: number;
+    /** Véhicules couverts par les souscriptions actives. */
+    vehicles: number;
+  };
+  /** Organisations ayant souscrit (souscription non résiliée). */
+  organizations: { id: string; code: string; name: string }[];
   organizationsCount: number;
   createdAt: string;
   updatedAt: string;
-}
-
-/** Détail : chaque organisation porte son nombre de véhicules. */
-export interface OfferDetail extends Offer {
-  organizations: Array<OfferOrganization & { vehicles: number }>;
-}
-
-/** Réponse de `POST /admin/offers/:id/organizations`. */
-export interface OfferAttachResult extends OfferDetail {
-  attached: string[];
-  moved: { organizationId: string; fromOfferId: string }[];
 }
 
 export interface OfferListParams extends PaginationParams {
   search?: string;
   status?: OfferStatus;
   periodicity?: OfferPeriodicity;
-  /** Offre détenue par cette organisation. */
+  /** Offres souscrites par cette organisation. */
   organizationId?: string;
-  /** `true` : détenues par au moins une organisation ; `false` : aucune. */
-  assigned?: boolean;
 }
 
 export interface CreateOfferPayload {
@@ -112,11 +119,10 @@ export interface CreateOfferPayload {
   launchedOn?: string;
   maxVehicles?: number | null;
   gpsHistoryDays?: number;
-  features?: string[];
-  organizationIds?: string[];
+  featureKeys?: string[];
 }
 
-/** `null` efface (description, date, limite → illimité). Organisations : routes dédiées. */
+/** Toute offre est modifiable. `null` efface (description, date, limite → illimité). */
 export interface UpdateOfferPayload {
   code?: string;
   name?: string;
@@ -128,5 +134,5 @@ export interface UpdateOfferPayload {
   launchedOn?: string | null;
   maxVehicles?: number | null;
   gpsHistoryDays?: number;
-  features?: string[];
+  featureKeys?: string[];
 }
