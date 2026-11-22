@@ -72,8 +72,8 @@ export function SubscriptionStatusDialog({
             {action?.verb(subscription.status)} la souscription {subscription.reference} ?
           </DialogTitle>
           <DialogDescription>
-            {subscription.organization?.name} · {subscription.offer?.name} · {subscription.vehicleGroup?.name}.{" "}
-            {action?.effect}
+            {subscription.organization?.name} · {subscription.offer?.name} ·{" "}
+            {subscription.operator?.fullName ?? subscription.vehicleGroup?.name}. {action?.effect}
           </DialogDescription>
         </DialogHeader>
         <Field className="gap-1.5">

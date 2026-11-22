@@ -97,24 +97,17 @@ export const sidebarItems: NavGroup[] = [
             url: "/dashboard/fleet",
             icon: MapPinned,
           },
-          /*
           {
             id: "client-offers",
             title: "Attribution des offres",
             url: "/dashboard/client-offers",
             icon: PackagePlus,
-          }, */
+          },
           {
             id: "subscriptions",
             title: "Gestion des souscriptions",
             url: "/dashboard/subscriptions",
             icon: FileSignature,
-          },
-          {
-            id: "vehicles",
-            title: "Gestion des véhicules",
-            url: "/dashboard/vehicles",
-            icon: CarIcon,
           },
         ],
       },
@@ -146,6 +139,24 @@ export const sidebarItems: NavGroup[] = [
         title: "Gestion des incidents",
         url: "/dashboard/incidents",
         icon: TriangleAlert,
+      },
+      {
+        id: "vehicles",
+        title: "Gestion des véhicules",
+        icon: CarIcon,
+        subItems: [
+          {
+            id: "vehicules",
+            title: "véhicules",
+            url: "/dashboard/vehicles",
+          },
+          {
+            id: "group_vehicle",
+            title: "Groupes de véhicules",
+            url: "/dashboard/group_vehicle",
+            icon: CarTaxiFront,
+          },
+        ],
       },
       {
         id: "administration",
@@ -276,12 +287,6 @@ export const sidebarItems: NavGroup[] = [
             icon: UsersRound,
           },
         ],
-      },
-      {
-        id: "group_vehicle",
-        title: "Groupes de véhicules",
-        url: "/dashboard/group_vehicle",
-        icon: CarTaxiFront,
       },
     ],
   },

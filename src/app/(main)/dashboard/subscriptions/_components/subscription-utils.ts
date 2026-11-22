@@ -3,7 +3,9 @@ import { offerPeriodicityMeta } from "@/types/offer";
 import type { Subscription } from "@/types/subscription";
 
 const per = (s: Pick<Subscription, "periodicity">) =>
-  s.periodicity ? (offerPeriodicityMeta[s.periodicity]?.short ?? s.periodicity) : "période";
+  s.periodicity
+    ? (offerPeriodicityMeta[s.periodicity]?.short ?? s.periodicity)
+    : "période";
 
 /** « 15 000 XOF » */
 export function formatMoney(value: string | number, currency: string): string {
@@ -11,13 +13,24 @@ export function formatMoney(value: string | number, currency: string): string {
 }
 
 /** Tarif appliqué : « 15 000 XOF / véhicule / mois » */
-export function formatUnitPrice(s: Pick<Subscription, "unitPrice" | "currency" | "periodicity">): string {
+export function formatUnitPrice(
+  s: Pick<Subscription, "unitPrice" | "currency" | "periodicity">,
+): string {
   return `${formatMoney(s.unitPrice, s.currency)} / véhicule / ${per(s)}`;
 }
 
 /** Montant : « 45 000 XOF / mois » */
-export function formatAmount(s: Pick<Subscription, "amount" | "currency" | "periodicity">): string {
+export function formatAmount(
+  s: Pick<Subscription, "amount" | "currency" | "periodicity">,
+): string {
   return `${formatMoney(s.amount, s.currency)} / ${per(s)}`;
+}
+
+/** Total affiché : « 45 000 XOF / mois » */
+export function formatTotal(
+  s: Pick<Subscription, "amount" | "currency" | "periodicity">,
+): string {
+  return formatAmount(s);
 }
 
 /** Montant prévisionnel côté formulaire (affichage seulement : l'API fait foi). */
