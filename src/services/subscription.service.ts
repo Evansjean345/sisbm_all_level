@@ -4,25 +4,16 @@ import type {
   CreateSubscriptionPayload,
   Subscription,
   SubscriptionListParams,
-  SubscriptionOperator,
   SubscriptionStatus,
   UpdateSubscriptionPayload,
 } from "@/types/subscription";
 
 /** Souscriptions — routes `/admin/subscriptions/*` (plateforme). */
 export const subscriptionService = {
-  /** GET /admin/subscriptions?search=&organizationId=&offerId=&vehicleGroupId=&operatorId=&target=&status= */
+  /** GET /admin/subscriptions?search=&organizationId=&offerId=&vehicleGroupId=&status= */
   async list(params: SubscriptionListParams = {}): Promise<Paginated<Subscription>> {
     const { data } = await api.get<Paginated<Subscription>>(adminPath("/subscriptions"), { params });
     return data;
-  },
-
-  /** GET /admin/subscriptions/operators?organizationId= — clients finaux et leur souscription en cours. */
-  async operators(organizationId: string): Promise<SubscriptionOperator[]> {
-    const { data } = await api.get<ApiResponse<SubscriptionOperator[]>>(adminPath("/subscriptions/operators"), {
-      params: { organizationId },
-    });
-    return data.data;
   },
 
   /** GET /admin/subscriptions/:id */
@@ -31,7 +22,7 @@ export const subscriptionService = {
     return data.data;
   },
 
-  /** POST /admin/subscriptions — l'offre doit être commercialisée ; une cible libre de l'organisation (flotte OU opérateur). */
+  /** POST /admin/subscriptions — l'offre doit être commercialisée, le groupe libre et au client. */
   async create(payload: CreateSubscriptionPayload): Promise<Subscription> {
     const { data } = await api.post<ApiResponse<Subscription>>(adminPath("/subscriptions"), payload);
     return data.data;

@@ -28,15 +28,6 @@ export function useSubscriptions(params: SubscriptionListParams = {}) {
   });
 }
 
-/** Clients finaux (opérateurs) d'une organisation, avec leur souscription en cours. */
-export function useSubscriptionOperators(organizationId: string | undefined) {
-  return useQuery({
-    queryKey: [...queryKeys.subscriptions.all, "operators", organizationId],
-    queryFn: () => subscriptionService.operators(organizationId as string),
-    enabled: Boolean(organizationId),
-  });
-}
-
 export function useCreateSubscription() {
   const invalidate = useInvalidateSubscriptions();
   return useMutation({

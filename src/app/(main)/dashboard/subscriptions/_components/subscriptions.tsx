@@ -4,19 +4,7 @@ import { useState } from "react";
 
 import { useSearchParams } from "next/navigation";
 
-import {
-  Ban,
-  CircleCheck,
-  CirclePause,
-  Download,
-  FilePen,
-  FileSignature,
-  Plus,
-  RefreshCw,
-  Search,
-  Truck,
-  UserRound,
-} from "lucide-react";
+import { Ban, CircleCheck, CirclePause, Download, FilePen, FileSignature, Plus, RefreshCw, Search } from "lucide-react";
 
 import { MetricCard, metricGridClass } from "@/components/metric-card";
 import { PageHeader } from "@/components/page-header";
@@ -33,15 +21,7 @@ import { useOffers } from "@/hooks/api/use-offers";
 import { useSubscriptions } from "@/hooks/api/use-subscriptions";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import { downloadCsv, formatDate } from "@/lib/format";
-import {
-  SUBSCRIPTION_STATUSES,
-  SUBSCRIPTION_TARGETS,
-  type Subscription,
-  type SubscriptionStatus,
-  type SubscriptionTarget,
-  subscriptionStatusMeta,
-  subscriptionTargetMeta,
-} from "@/types/subscription";
+import { SUBSCRIPTION_STATUSES, type SubscriptionStatus, subscriptionStatusMeta } from "@/types/subscription";
 
 import { SubscriptionFormDialog } from "./subscription-form-dialog";
 import { SubscriptionRowActions } from "./subscription-row-actions";
@@ -50,22 +30,15 @@ import { formatMoney, formatTotal } from "./subscription-utils";
 const ALL = "all";
 
 /**
- * Souscriptions : client × offre × UNE cible — un groupe de véhicules OU un
- * client final (opérateur). Tarif appliqué = prix de l'offre figé − remise,
- * par période (forfait) ; cycle brouillon → active ⇄ suspendue → résiliée.
- * Une souscription active ouvre les pages de son offre au tableau de bord
- * concerné.
- *
- * `fixedTarget = "operator"` : page « Attribution des offres », réservée aux
- * souscriptions des clients finaux.
+ * Souscriptions : client × offre × groupe de véhicules. Tarif appliqué =
+ * prix de l'offre figé − remise, par période (forfait) ; cycle brouillon →
+ * active ⇄ suspendue → résiliée. Une souscription active ouvre les pages de son offre dans le
+ * tableau de bord du client.
  */
-export function Subscriptions({ fixedTarget }: { fixedTarget?: SubscriptionTarget } = {}) {
-  const forOperators = fixedTarget === "operator";
+export function Subscriptions() {
   const searchParams = useSearchParams();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<SubscriptionStatus | typeof ALL>(ALL);
-  const [targetFilter, setTargetFilter] = useState<SubscriptionTarget | typeof ALL>(ALL);
-  const target = fixedTarget ?? (targetFilter === ALL ? undefined : targetFilter);
   const [offerId, setOfferId] = useState<string>(searchParams.get("offerId") ?? ALL);
   const [organizationId, setOrganizationId] = useState<string | undefined>(
     searchParams.get("organizationId") ?? undefined,
@@ -83,33 +56,28 @@ export function Subscriptions({ fixedTarget }: { fixedTarget?: SubscriptionTarge
     status: status === ALL ? undefined : status,
     offerId: offerId === ALL ? undefined : offerId,
     organizationId,
-    target,
   });
   // Compteurs globaux par statut (une ligne suffit : on lit `meta.total`).
   const counts = {
-    active: useSubscriptions({ perPage: 1, status: "active", target: fixedTarget }),
-    draft: useSubscriptions({ perPage: 1, status: "draft", target: fixedTarget }),
-    suspended: useSubscriptions({ perPage: 1, status: "suspended", target: fixedTarget }),
-    terminated: useSubscriptions({ perPage: 1, status: "terminated", target: fixedTarget }),
+    active: useSubscriptions({ perPage: 1, status: "active" }),
+    draft: useSubscriptions({ perPage: 1, status: "draft" }),
+    suspended: useSubscriptions({ perPage: 1, status: "suspended" }),
+    terminated: useSubscriptions({ perPage: 1, status: "terminated" }),
   };
 
   const rows = subscriptions.data?.data ?? [];
   const resetPage = () => setPage(1);
-  const filtered =
-    Boolean(debouncedSearch) || status !== ALL || offerId !== ALL || targetFilter !== ALL || Boolean(organizationId);
+  const filtered = Boolean(debouncedSearch) || status !== ALL || offerId !== ALL || Boolean(organizationId);
 
   function exportCsv() {
     downloadCsv(
-      `${forOperators ? "attributions" : "souscriptions"}-${new Date().toISOString().slice(0, 10)}.csv`,
+      `souscriptions-${new Date().toISOString().slice(0, 10)}.csv`,
       rows.map((s) => ({
         reference: s.reference,
         client: s.organization?.name ?? "",
         offre: s.offer?.name ?? "",
-        cible: subscriptionTargetMeta[s.target]?.short ?? s.target,
         groupe_vehicules: s.vehicleGroup?.name ?? "",
-        client_final: s.operator?.fullName ?? "",
-        email_client_final: s.operator?.email ?? "",
-        vehicules: s.vehiclesCount ?? "",
+        vehicules: s.vehiclesCount,
         prix_offre: s.offerPrice,
         remise: s.discount,
         tarif_applique: s.totalPrice,
@@ -125,12 +93,8 @@ export function Subscriptions({ fixedTarget }: { fixedTarget?: SubscriptionTarge
   return (
     <div className="flex flex-col gap-4">
       <PageHeader
-        title={forOperators ? "Attribution des offres" : "Souscriptions"}
-        description={
-          forOperators
-            ? "Offres attribuées directement aux clients finaux (opérateurs), sans groupe de véhicules. Un opérateur qui a sa propre souscription ne voit que les pages de cette offre ; sans souscription propre, il garde l'offre de son distributeur."
-            : "Offres souscrites par les clients, pour une flotte ou pour un client final (opérateur). Tarif appliqué = prix de l'offre − remise, indépendant du nombre de véhicules. Une souscription active ouvre les pages de son offre au tableau de bord concerné."
-        }
+        title="Souscriptions"
+        description="Offres souscrites par les clients, une par groupe de véhicules. Tarif appliqué = prix de l'offre − remise, indépendant du nombre de véhicules. Une souscription active ouvre les pages de son offre aux tableaux de bord du distributeur et de ses opérateurs."
         actions={
           <>
             <Button variant="outline" onClick={exportCsv} disabled={rows.length === 0}>
@@ -139,7 +103,7 @@ export function Subscriptions({ fixedTarget }: { fixedTarget?: SubscriptionTarge
             </Button>
             <Button onClick={() => setCreateOpen(true)}>
               <Plus data-icon="inline-start" />
-              {forOperators ? "Attribuer une offre" : "Nouvelle souscription"}
+              Nouvelle souscription
             </Button>
           </>
         }
@@ -165,9 +129,7 @@ export function Subscriptions({ fixedTarget }: { fixedTarget?: SubscriptionTarge
       <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
         <InputGroup className="md:max-w-lg">
           <InputGroupInput
-            placeholder={
-              forOperators ? "Rechercher par référence, client ou opérateur…" : "Rechercher par référence ou client…"
-            }
+            placeholder="Rechercher par référence ou client…"
             aria-label="Rechercher une souscription"
             value={search}
             onChange={(e) => {
@@ -209,30 +171,6 @@ export function Subscriptions({ fixedTarget }: { fixedTarget?: SubscriptionTarge
               </SelectGroup>
             </SelectContent>
           </Select>
-          {fixedTarget ? null : (
-            <Select
-              value={targetFilter}
-              onValueChange={(v) => {
-                setTargetFilter(v as SubscriptionTarget | typeof ALL);
-                resetPage();
-              }}
-            >
-              <SelectTrigger size="sm">
-                <span className="text-muted-foreground">Cible :</span>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent position="popper" align="end">
-                <SelectGroup>
-                  <SelectItem value={ALL}>Toutes</SelectItem>
-                  {SUBSCRIPTION_TARGETS.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {subscriptionTargetMeta[t].short}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          )}
           <Select
             value={status}
             onValueChange={(v) => {
@@ -279,18 +217,14 @@ export function Subscriptions({ fixedTarget }: { fixedTarget?: SubscriptionTarge
             <div className="px-4">
               <EmptyState
                 icon={<FileSignature />}
-                title={forOperators ? "Aucune offre attribuée" : "Aucune souscription"}
+                title="Aucune souscription"
                 description={
-                  filtered
-                    ? "Aucune souscription ne correspond à ces filtres."
-                    : forOperators
-                      ? "Attribuez une offre à un client final."
-                      : "Créez la première souscription."
+                  filtered ? "Aucune souscription ne correspond à ces filtres." : "Créez la première souscription."
                 }
                 action={
                   <Button size="sm" onClick={() => setCreateOpen(true)}>
                     <Plus data-icon="inline-start" />
-                    {forOperators ? "Attribuer une offre" : "Nouvelle souscription"}
+                    Nouvelle souscription
                   </Button>
                 }
               />
@@ -304,10 +238,8 @@ export function Subscriptions({ fixedTarget }: { fixedTarget?: SubscriptionTarge
                       <TableHead>Référence</TableHead>
                       <TableHead>Client</TableHead>
                       <TableHead>Offre</TableHead>
-                      <TableHead className="hidden lg:table-cell">{forOperators ? "Client final" : "Cible"}</TableHead>
-                      {forOperators ? null : (
-                        <TableHead className="hidden text-right md:table-cell">Véhicules</TableHead>
-                      )}
+                      <TableHead className="hidden lg:table-cell">Groupe de véhicules</TableHead>
+                      <TableHead className="hidden text-right md:table-cell">Véhicules</TableHead>
                       <TableHead className="hidden text-right xl:table-cell">Prix de l'offre</TableHead>
                       <TableHead className="hidden text-right lg:table-cell">Remise</TableHead>
                       <TableHead className="text-right">Tarif appliqué</TableHead>
@@ -336,14 +268,10 @@ export function Subscriptions({ fixedTarget }: { fixedTarget?: SubscriptionTarge
                             <OrganizationCell organization={s.organization} />
                           </TableCell>
                           <TableCell>{s.offer?.name ?? "—"}</TableCell>
-                          <TableCell className="hidden max-w-56 lg:table-cell">
-                            <TargetCell subscription={s} />
+                          <TableCell className="hidden lg:table-cell">{s.vehicleGroup?.name ?? "—"}</TableCell>
+                          <TableCell className="hidden text-right tabular-nums md:table-cell">
+                            {s.vehiclesCount}
                           </TableCell>
-                          {forOperators ? null : (
-                            <TableCell className="hidden text-right tabular-nums md:table-cell">
-                              {s.vehiclesCount ?? "—"}
-                            </TableCell>
-                          )}
                           <TableCell className="hidden whitespace-nowrap text-right text-muted-foreground tabular-nums xl:table-cell">
                             {formatMoney(s.offerPrice, s.currency)}
                           </TableCell>
@@ -387,30 +315,7 @@ export function Subscriptions({ fixedTarget }: { fixedTarget?: SubscriptionTarge
         onOpenChange={setCreateOpen}
         defaultOrganizationId={organizationId}
         defaultOfferId={offerId === ALL ? undefined : offerId}
-        defaultTarget={fixedTarget ?? (targetFilter === ALL ? undefined : targetFilter)}
-        lockTarget={Boolean(fixedTarget)}
       />
-    </div>
-  );
-}
-
-/** Flotte (nom du groupe) ou client final (nom + e-mail). */
-function TargetCell({ subscription: s }: { subscription: Subscription }) {
-  if (s.target === "operator") {
-    return (
-      <div className="flex min-w-0 items-center gap-2">
-        <UserRound className="size-4 shrink-0 text-muted-foreground" aria-label="Client final" />
-        <div className="flex min-w-0 flex-col">
-          <span className="truncate">{s.operator?.fullName ?? "—"}</span>
-          <span className="truncate text-muted-foreground text-xs">{s.operator?.email}</span>
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="flex min-w-0 items-center gap-2">
-      <Truck className="size-4 shrink-0 text-muted-foreground" aria-label="Flotte" />
-      <span className="truncate">{s.vehicleGroup?.name ?? "—"}</span>
     </div>
   );
 }
