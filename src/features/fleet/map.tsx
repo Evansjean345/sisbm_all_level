@@ -212,7 +212,14 @@ export default function FleetMap({
             <Marker
               key={v.id}
               position={[Number(p.latitude), Number(p.longitude)]}
-              icon={vehicleIcon(v.registration, v.vehicleType, state, selected, selected ? selectedHeading : null)}
+              icon={vehicleIcon(
+                v.registration,
+                v.vehicleType,
+                state,
+                selected,
+                selected ? selectedHeading : null,
+                v.color,
+              )}
               zIndexOffset={selected ? 1000 : 0}
               title={v.registration}
               eventHandlers={{ click: () => onSelect?.(v.id) }}

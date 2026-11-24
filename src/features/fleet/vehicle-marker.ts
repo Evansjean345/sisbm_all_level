@@ -3,7 +3,9 @@ import { createElement } from "react";
 import L from "leaflet";
 import { renderToStaticMarkup } from "react-dom/server";
 
+import { carSvg } from "@/features/fleet/car-icon";
 import { FLEET_STATE_SWATCH, type FleetState, VEHICLE_ICONS } from "@/features/fleet/fleet-state";
+import { vehicleColorHex } from "@/features/fleet/vehicle-color";
 import type { VehicleType } from "@/types/vehicle";
 
 const cache = new Map<string, L.DivIcon>();
@@ -12,10 +14,15 @@ function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
+/** Hauteur de la voiture sur la carte (px) ; elle est centrée sur la position. */
+const CAR_HEIGHT = 34;
+
 /**
- * Étiquette véhicule posée sur la carte : pastille colorée (état) avec le
- * pictogramme du type, suivie de l'immatriculation. Ancrée par sa pointe
- * basse sur la position. Mise en cache : Leaflet recrée le DOM à chaque changement d'icône.
+ * Marqueur véhicule : la VOITURE (vue de dessus, à la couleur du véhicule,
+ * orientée selon le cap quand il est connu) est centrée sur la position ;
+ * l'ÉTIQUETTE — pastille colorée selon l'état, pictogramme du type,
+ * immatriculation — est posée juste au-dessus.
+ * Mise en cache : Leaflet recrée le DOM à chaque changement d'icône.
  */
 export function vehicleIcon(
   registration: string,
@@ -23,9 +30,11 @@ export function vehicleIcon(
   state: FleetState,
   selected: boolean,
   heading: number | null,
+  color: string | null = null,
 ): L.DivIcon {
   const roundedHeading = heading === null ? "-" : Math.round(heading / 5) * 5;
-  const key = `${registration}|${type}|${state}|${selected}|${roundedHeading}`;
+  const fill = vehicleColorHex(color);
+  const key = `${registration}|${type}|${state}|${selected}|${roundedHeading}|${fill}`;
   const hit = cache.get(key);
   if (hit) return hit;
 
@@ -37,7 +46,9 @@ export function vehicleIcon(
       ? ""
       : `<span class="flex size-4 items-center justify-center text-muted-foreground" style="transform:rotate(${roundedHeading}deg)"><svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M5 0 9 10 5 7.5 1 10z"/></svg></span>`;
 
-  const html = `<div class="fleet-label pointer-events-auto absolute bottom-0 left-0 flex -translate-x-1/2 flex-col items-center">
+  const car = carSvg(fill, CAR_HEIGHT, heading === null ? null : Number(roundedHeading));
+  // Le bas du bloc tombe sur la position, décalé d'une demi-voiture : la voiture est centrée sur le point.
+  const html = `<div class="fleet-label pointer-events-auto absolute left-0 flex -translate-x-1/2 flex-col items-center" style="bottom:-${CAR_HEIGHT / 2}px">
   <div class="flex items-center gap-1.5 whitespace-nowrap rounded-md bg-popover py-1 pr-2 pl-1 font-semibold text-[11px] text-popover-foreground shadow-md ring-1 ${
     selected ? "ring-2 ring-primary" : "ring-border"
   }">
@@ -47,6 +58,7 @@ export function vehicleIcon(
   <span class="size-0 border-x-[5px] border-t-[6px] border-x-transparent ${
     selected ? "border-t-primary" : "border-t-popover"
   }"></span>
+  <span class="mt-0.5 flex items-center justify-center drop-shadow ${selected ? "scale-110" : ""}" style="height:${CAR_HEIGHT}px">${car}</span>
 </div>`;
 
   const icon = L.divIcon({
@@ -55,8 +67,8 @@ export function vehicleIcon(
     // Taille nulle : l'étiquette se positionne elle-même au-dessus du point d'ancrage.
     iconSize: [0, 0],
     iconAnchor: [0, 0],
-    popupAnchor: [0, -34],
-    tooltipAnchor: [0, -34],
+    popupAnchor: [0, -(CAR_HEIGHT / 2 + 34)],
+    tooltipAnchor: [0, -(CAR_HEIGHT / 2 + 34)],
   });
   cache.set(key, icon);
   return icon;
