@@ -44,7 +44,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { OrganizationSelect } from "@/features/common/organization/organization-select";
+import { OrganizationFilter, OrganizationSelect } from "@/features/common/organization/organization-select";
 import {
   useGeofences,
   useSaveGeofence,
@@ -246,6 +246,37 @@ export function Zones({
     );
   }
 
+  // Filtre Flotte compact, à côté du filtre client : il choisit les véhicules affichés sur la carte.
+  const fleetFilter = (
+    <Select
+      value={organizationId ? (filterFleet ?? ALL_VEHICLES) : ""}
+      onValueChange={(id) => setFilterFleet(id === ALL_VEHICLES ? undefined : id)}
+      disabled={!organizationId || fleets.isPending || fleetRows.length === 0}
+    >
+      <SelectTrigger
+        size="sm"
+        className="w-auto min-w-44"
+        aria-label="Flotte"
+        title={organizationId ? undefined : "Choisissez d'abord un client"}
+      >
+        <span className="text-muted-foreground">Flotte :</span>
+        <SelectValue
+          placeholder={!organizationId ? "choisir un client" : fleets.isPending ? "chargement…" : "toutes"}
+        />
+      </SelectTrigger>
+      <SelectContent position="popper" align="end">
+        <SelectGroup>
+          <SelectItem value={ALL_VEHICLES}>Tous les véhicules du client</SelectItem>
+          {fleetRows.map((group) => (
+            <SelectItem key={group.id} value={group.id}>
+              {group.name} · {group.membersCount} véhicule(s)
+            </SelectItem>
+          ))}
+        </SelectGroup>
+      </SelectContent>
+    </Select>
+  );
+
   return (
     <div className="flex flex-col gap-4">
       {scoped ? null : (
@@ -253,7 +284,16 @@ export function Zones({
           title="Zones géographiques"
           description="Zones autorisées ou interdites, en cercle ou en polygone, avec alerte à l'entrée et/ou à la sortie."
           actions={
-            <>
+            // Sans retour à la ligne : client, flotte et « Nouvelle zone » restent alignés à droite.
+            <div className="flex flex-nowrap items-center gap-2">
+              <OrganizationFilter
+                value={filterOrg}
+                onChange={(id) => {
+                  setFilterOrg(id);
+                  setFilterFleet(undefined);
+                }}
+              />
+              {fleetFilter}
               <Button
                 onClick={() => {
                   const payload = emptyDraft(organizationId ?? "");
@@ -264,12 +304,13 @@ export function Zones({
                 <Plus data-icon="inline-start" />
                 Nouvelle zone
               </Button>
-            </>
+            </div>
           }
         />
       )}
       {scoped ? (
-        <div className="flex justify-end">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {fleetFilter}
           <Button
             onClick={() => {
               const payload = emptyDraft(scoped);
@@ -282,68 +323,6 @@ export function Zones({
           </Button>
         </div>
       ) : null}
-      <div className="flex flex-wrap items-end justify-end gap-3">
-        {scoped ? null : (
-          <Field className="w-full gap-1.5 sm:w-56">
-            <FieldLabel htmlFor="zones-organization-filter">Client</FieldLabel>
-            <OrganizationSelect
-              id="zones-organization-filter"
-              allowAll
-              value={filterOrg}
-              onChange={(id) => {
-                setFilterOrg(id);
-                setFilterFleet(undefined);
-              }}
-              className="w-full"
-              placeholder="Tous les clients"
-            />
-          </Field>
-        )}
-        <Field className="w-full gap-1.5 sm:w-56">
-          <FieldLabel htmlFor="zones-fleet-filter">Flotte</FieldLabel>
-          <Select
-            value={organizationId ? (filterFleet ?? ALL_VEHICLES) : ""}
-            onValueChange={(id) =>
-              setFilterFleet(id === ALL_VEHICLES ? undefined : id)
-            }
-            disabled={
-              !organizationId || fleets.isPending || fleetRows.length === 0
-            }
-          >
-            <SelectTrigger id="zones-fleet-filter" className="w-full">
-              <SelectValue
-                placeholder={
-                  !organizationId
-                    ? "Choisissez d'abord un client"
-                    : fleets.isPending
-                      ? "Chargement des flottes…"
-                      : "Toutes les flottes"
-                }
-              />
-            </SelectTrigger>
-            <SelectContent position="popper" align="end">
-              <SelectGroup>
-                <SelectItem value={ALL_VEHICLES}>
-                  Tous les véhicules du client
-                </SelectItem>
-                {fleetRows.map((group) => (
-                  <SelectItem key={group.id} value={group.id}>
-                    {group.name} · {group.membersCount} véhicule(s)
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </Field>
-        {organizationId ? (
-          <p className="text-muted-foreground text-sm" role="status">
-            {zoneVehicles.loading
-              ? "Chargement des véhicules…"
-              : `${placedVehicles.length} véhicule(s) sur la carte`}
-          </p>
-        ) : null}
-      </div>
-
       <Alert>
         <MapPinned />
         <AlertTitle>Zones enregistrées</AlertTitle>
@@ -379,6 +358,14 @@ export function Zones({
                       OpenStreetMap
                     </a>
                     .
+                    {organizationId ? (
+                      <span role="status">
+                        {" "}
+                        {zoneVehicles.loading
+                          ? "Chargement des véhicules…"
+                          : `${placedVehicles.length} véhicule(s) sur la carte.`}
+                      </span>
+                    ) : null}
                   </FieldDescription>
                 </Field>
               </FieldGroup>

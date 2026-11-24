@@ -6,7 +6,7 @@ import { Subscriptions } from "../subscriptions/_components/subscriptions";
 export default function Page() {
   return (
     <Suspense fallback={null}>
-      <Subscriptions fixedTarget="operator" />
+      <Subscriptions />
     </Suspense>
   );
 }
