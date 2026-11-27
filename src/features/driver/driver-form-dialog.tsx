@@ -92,12 +92,15 @@ export function DriverFormDialog({
   onOpenChange,
   driver,
   defaultOrganizationId,
+  lockOrganization = false,
   onCreated,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   driver?: Driver;
   defaultOrganizationId?: string | null;
+  /** Espace client : l'organisation est imposée, le choix est masqué. */
+  lockOrganization?: boolean;
   onCreated?: (driver: Driver) => void;
 }) {
   const create = useCreateDriver();
@@ -201,7 +204,7 @@ export function DriverFormDialog({
               control={form.control}
               name="organizationId"
               render={({ field }) => (
-                <Field className="gap-1.5">
+                <Field className="gap-1.5" hidden={lockOrganization}>
                   <FieldLabel htmlFor="driver-organization">Organisation</FieldLabel>
                   <DriverOrganizationSelect
                     id="driver-organization"

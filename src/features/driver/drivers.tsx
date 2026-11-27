@@ -33,8 +33,11 @@ const ALL = "all";
 /**
  * Conducteurs de toutes les organisations, et vivier de l'exploitant
  * (conducteurs sans organisation).
+ *
+ * `organizationId` (espace client) fixe l'organisation : filtre, colonne,
+ * vivier et choix d'organisation du formulaire disparaissent.
  */
-export function Drivers() {
+export function Drivers({ organizationId: scoped }: { organizationId?: string } = {}) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [organization, setOrganization] = useState(ALL_ORGANIZATIONS);
@@ -45,17 +48,17 @@ export function Drivers() {
   const debouncedSearch = useDebouncedValue(search.trim());
 
   const organizationId =
-    organization === ALL_ORGANIZATIONS || organization === NO_ORGANIZATION ? undefined : organization;
+    scoped ?? (organization === ALL_ORGANIZATIONS || organization === NO_ORGANIZATION ? undefined : organization);
   const drivers = useDrivers({
     page,
     perPage,
     search: debouncedSearch || undefined,
     status: status === ALL ? undefined : status,
     organizationId,
-    withoutOrganization: organization === NO_ORGANIZATION ? true : undefined,
+    withoutOrganization: !scoped && organization === NO_ORGANIZATION ? true : undefined,
   });
   // Le vivier (conducteurs sans organisation) n'existe qu'au niveau plateforme.
-  const isPlatform = useOptionalAccess()?.isPlatform ?? false;
+  const isPlatform = (useOptionalAccess()?.isPlatform ?? false) && !scoped;
   const vivier = useDrivers({ page: 1, perPage: 1, withoutOrganization: true }, { enabled: isPlatform });
 
   const rows = drivers.data?.data ?? [];
@@ -79,26 +82,32 @@ export function Drivers() {
     );
   }
 
+  const headerActions = (
+    <>
+      <Button variant="outline" onClick={exportCsv} disabled={rows.length === 0}>
+        <Download data-icon="inline-start" />
+        Exporter
+      </Button>
+      <Can permission="vehicle:write">
+        <Button onClick={() => setCreateOpen(true)}>
+          <Plus data-icon="inline-start" />
+          Nouveau conducteur
+        </Button>
+      </Can>
+    </>
+  );
+
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader
-        title="Conducteurs"
-        description="Conducteurs des organisations clientes et vivier de l'exploitant. Rattachez-les à une organisation, à un véhicule et à des équipes."
-        actions={
-          <>
-            <Button variant="outline" onClick={exportCsv} disabled={rows.length === 0}>
-              <Download data-icon="inline-start" />
-              Exporter
-            </Button>
-            <Can permission="vehicle:write">
-              <Button onClick={() => setCreateOpen(true)}>
-                <Plus data-icon="inline-start" />
-                Nouveau conducteur
-              </Button>
-            </Can>
-          </>
-        }
-      />
+      {scoped ? (
+        <div className="flex flex-wrap justify-end gap-2">{headerActions}</div>
+      ) : (
+        <PageHeader
+          title="Conducteurs"
+          description="Conducteurs des organisations clientes et vivier de l'exploitant. Rattachez-les à une organisation, à un véhicule et à des équipes."
+          actions={headerActions}
+        />
+      )}
 
       <div className={metricGridClass}>
         <MetricCard icon={Contact} label="Conducteurs" value={total} hint="Selon les filtres en cours." />
@@ -140,13 +149,15 @@ export function Drivers() {
           </InputGroupAddon>
         </InputGroup>
         <div className="flex flex-1 flex-wrap items-center gap-2 xl:justify-end">
-          <DriverOrganizationFilter
-            value={organization}
-            onChange={(v) => {
-              setOrganization(v);
-              setPage(1);
-            }}
-          />
+          {scoped ? null : (
+            <DriverOrganizationFilter
+              value={organization}
+              onChange={(v) => {
+                setOrganization(v);
+                setPage(1);
+              }}
+            />
+          )}
           <Select
             value={status}
             onValueChange={(v) => {
@@ -209,7 +220,7 @@ export function Drivers() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Conducteur</TableHead>
-                      <TableHead className="hidden md:table-cell">Organisation</TableHead>
+                      {scoped ? null : <TableHead className="hidden md:table-cell">Organisation</TableHead>}
                       <TableHead className="hidden sm:table-cell">Véhicule</TableHead>
                       <TableHead className="hidden lg:table-cell">Permis</TableHead>
                       <TableHead className="hidden xl:table-cell">Téléphone</TableHead>
@@ -238,15 +249,17 @@ export function Drivers() {
                               ) : null}
                             </Link>
                           </TableCell>
-                          <TableCell className="hidden max-w-48 md:table-cell">
-                            {d.organizationId ? (
-                              <OrganizationCell organization={d.organization} />
-                            ) : (
-                              <StatusBadge tone="neutral" dot={false}>
-                                Vivier
-                              </StatusBadge>
-                            )}
-                          </TableCell>
+                          {scoped ? null : (
+                            <TableCell className="hidden max-w-48 md:table-cell">
+                              {d.organizationId ? (
+                                <OrganizationCell organization={d.organization} />
+                              ) : (
+                                <StatusBadge tone="neutral" dot={false}>
+                                  Vivier
+                                </StatusBadge>
+                              )}
+                            </TableCell>
+                          )}
                           <TableCell className="hidden sm:table-cell">
                             {d.vehicle ? (
                               <Link
@@ -311,6 +324,7 @@ export function Drivers() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         defaultOrganizationId={organizationId ?? null}
+        lockOrganization={Boolean(scoped)}
         onCreated={(created) => router.push(`/dashboard/driver/${created.id}`)}
       />
     </div>

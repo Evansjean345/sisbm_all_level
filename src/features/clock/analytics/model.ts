@@ -60,9 +60,11 @@ export function buildModel(data: ScheduleAnalyticsData): AnalyticsModel {
     const covered: Record<ScheduleMode, Set<string>> = { allowed: new Set(), forbidden: new Set() };
     const statEmpty: string[] = [];
 
+    // L'API ne renvoie plus `mode` : seules les plages autorisées existent (immobilisation hors plage).
     for (const t of s.vehicles) {
-      add(t.id, t.label, { ...base, mode: t.mode, source: { type: "vehicle" } });
-      covered[t.mode].add(t.id);
+      const mode = t.mode ?? "allowed";
+      add(t.id, t.label, { ...base, mode, source: { type: "vehicle" } });
+      covered[mode].add(t.id);
     }
     for (const t of s.vehicleGroups) {
       const group = data.groups.get(t.id);
@@ -71,9 +73,10 @@ export function buildModel(data: ScheduleAnalyticsData): AnalyticsModel {
         statEmpty.push(t.label);
         emptyGroups.push({ id: t.id, name: t.label, schedule: s.name });
       }
+      const mode = t.mode ?? "allowed";
       for (const m of members) {
-        add(m.id, m.label, { ...base, mode: t.mode, source: { type: "group", groupId: t.id, groupName: t.label } });
-        covered[t.mode].add(m.id);
+        add(m.id, m.label, { ...base, mode, source: { type: "group", groupId: t.id, groupName: t.label } });
+        covered[mode].add(m.id);
       }
     }
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import Link from "next/link";
 
-import { ArrowLeft, Pencil, RefreshCw, Truck, Users } from "lucide-react";
+import { ArrowLeft, LayoutGrid, Pencil, RefreshCw, Truck, Users } from "lucide-react";
 
 import { DetailList } from "@/components/detail-list";
 import { MetricCard, metricGridClass } from "@/components/metric-card";
@@ -66,6 +66,12 @@ export function OrganizationDetail({ id }: { id: string }) {
           <Button size="sm" variant="outline" onClick={() => organization.refetch()} disabled={organization.isFetching}>
             <RefreshCw className={organization.isFetching ? "animate-spin" : undefined} />
             <span className="sr-only">Actualiser</span>
+          </Button>
+          <Button size="sm" asChild>
+            <Link href={`/dashboard/space_clients/${data.id}`} prefetch={false}>
+              <LayoutGrid data-icon="inline-start" />
+              Espace client
+            </Link>
           </Button>
           <Button size="sm" variant="outline" onClick={() => setEditOpen(true)}>
             <Pencil data-icon="inline-start" />

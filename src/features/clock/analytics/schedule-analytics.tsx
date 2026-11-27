@@ -101,11 +101,19 @@ function monthOf(value: string | null): CivilDate | null {
  *
  * État dans l'URL (`source`, `mois`, `jour`) : la vue se partage et survit au retour.
  */
-export function ScheduleAnalytics({ onCreate }: { onCreate: () => void }) {
+export function ScheduleAnalytics({
+  onCreate,
+  organizationId: scoped,
+}: {
+  onCreate: () => void;
+  /** Espace client : analyses limitées à cette organisation, sans filtre. */
+  organizationId?: string;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [organizationId, setOrganizationId] = useState<string | undefined>();
+  const [filterOrg, setOrganizationId] = useState<string | undefined>();
+  const organizationId = scoped ?? filterOrg;
   const [plannedMetric, setPlannedMetric] = useState<PlannedMetric>("vehicleHours");
   const [realMetric, setRealMetric] = useState<RealMetric>("confirmedCuts");
   const source: Source = searchParams.get("source") === "reel" ? "reel" : "prevu";
@@ -232,7 +240,7 @@ export function ScheduleAnalytics({ onCreate }: { onCreate: () => void }) {
         <span className="text-muted-foreground text-xs">Heures : {displayTz}</span>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <OrganizationFilter value={organizationId} onChange={setOrganizationId} />
+        {scoped ? null : <OrganizationFilter value={filterOrg} onChange={setOrganizationId} />}
         <Button
           size="sm"
           variant="outline"

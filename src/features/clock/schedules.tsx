@@ -45,18 +45,22 @@ type ClockView = "calendriers" | "analyses";
 /**
  * Gestion des horaires — calendriers d'utilisation de toutes les organisations.
  *
+ * `organizationId` (espace client) fixe l'organisation : filtre, colonne et
+ * choix d'organisation du formulaire disparaissent.
+ *
  * Un calendrier rattaché à un véhicule ou à une flotte est appliqué par le
  * moteur `sisbm:schedules:enforce` : coupure hors des plages autorisées (ou
  * pendant les plages interdites), rétablissement à la réouverture.
  */
-export function Schedules() {
+export function Schedules({ organizationId: scoped }: { organizationId?: string } = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const view: ClockView = searchParams.get("vue") === "analyses" ? "analyses" : "calendriers";
   const [search, setSearch] = useState("");
   const [active, setActive] = useState<ActiveFilter>("all");
-  const [organizationId, setOrganizationId] = useState<string | undefined>();
+  const [filterOrg, setFilterOrg] = useState<string | undefined>();
+  const organizationId = scoped ?? filterOrg;
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(25);
   const [createOpen, setCreateOpen] = useState(false);
@@ -75,20 +79,26 @@ export function Schedules() {
   const vehicules = rows.reduce((sum, s) => sum + (s.vehiclesCount ?? 0), 0);
   const flottes = rows.reduce((sum, s) => sum + (s.vehicleGroupsCount ?? 0), 0);
 
+  const newButton = (
+    <Can permission="policy:write">
+      <Button onClick={() => setCreateOpen(true)}>
+        <Plus data-icon="inline-start" />
+        Nouveau calendrier
+      </Button>
+    </Can>
+  );
+
   return (
     <div className="flex flex-col gap-4">
-      <PageHeader
-        title="Gestion des horaires"
-        description="Calendriers d'utilisation : le moteur planifié immobilise les véhicules hors de leurs plages et les rétablit à la réouverture."
-        actions={
-          <Can permission="policy:write">
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus data-icon="inline-start" />
-              Nouveau calendrier
-            </Button>
-          </Can>
-        }
-      />
+      {scoped ? (
+        <div className="flex justify-end">{newButton}</div>
+      ) : (
+        <PageHeader
+          title="Gestion des horaires"
+          description="Calendriers d'utilisation : le moteur planifié immobilise les véhicules hors de leurs plages et les rétablit à la réouverture."
+          actions={newButton}
+        />
+      )}
 
       <Tabs
         value={view}
@@ -110,7 +120,7 @@ export function Schedules() {
         </TabsList>
 
         <TabsContent value="analyses" className="pt-2">
-          <ScheduleAnalytics onCreate={() => setCreateOpen(true)} />
+          <ScheduleAnalytics onCreate={() => setCreateOpen(true)} organizationId={scoped} />
         </TabsContent>
 
         <TabsContent value="calendriers" className="flex flex-col gap-4 pt-2">
@@ -152,13 +162,15 @@ export function Schedules() {
               </InputGroupAddon>
             </InputGroup>
             <div className="flex flex-1 flex-wrap items-center gap-2 xl:justify-end">
-              <OrganizationFilter
-                value={organizationId}
-                onChange={(id) => {
-                  setOrganizationId(id);
-                  setPage(1);
-                }}
-              />
+              {scoped ? null : (
+                <OrganizationFilter
+                  value={filterOrg}
+                  onChange={(id) => {
+                    setFilterOrg(id);
+                    setPage(1);
+                  }}
+                />
+              )}
               <Select
                 value={active}
                 onValueChange={(v) => {
@@ -218,7 +230,7 @@ export function Schedules() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Calendrier</TableHead>
-                          <TableHead className="hidden md:table-cell">Organisation</TableHead>
+                          {scoped ? null : <TableHead className="hidden md:table-cell">Organisation</TableHead>}
                           <TableHead className="hidden lg:table-cell">Semaine</TableHead>
                           <TableHead className="hidden sm:table-cell">Rattachements</TableHead>
                           <TableHead>État</TableHead>
@@ -243,9 +255,11 @@ export function Schedules() {
                                 </span>
                               </Link>
                             </TableCell>
-                            <TableCell className="hidden max-w-48 md:table-cell">
-                              <OrganizationCell organization={s.organization} />
-                            </TableCell>
+                            {scoped ? null : (
+                              <TableCell className="hidden max-w-48 md:table-cell">
+                                <OrganizationCell organization={s.organization} />
+                              </TableCell>
+                            )}
                             <TableCell className="hidden w-64 lg:table-cell">
                               <WeekPreview windows={s.windows} compact />
                             </TableCell>
@@ -296,6 +310,7 @@ export function Schedules() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         defaultOrganizationId={organizationId}
+        lockOrganization={Boolean(scoped)}
         onCreated={(created) => router.push(`/dashboard/clock/${created.id}`)}
       />
     </div>

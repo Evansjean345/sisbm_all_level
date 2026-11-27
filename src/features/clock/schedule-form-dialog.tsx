@@ -78,6 +78,7 @@ export function ScheduleFormDialog({
   onOpenChange,
   schedule,
   defaultOrganizationId,
+  lockOrganization = false,
   onCreated,
 }: {
   open: boolean;
@@ -85,6 +86,8 @@ export function ScheduleFormDialog({
   /** Absent = création. */
   schedule?: UsageSchedule;
   defaultOrganizationId?: string;
+  /** Espace client : l'organisation est imposée, le choix est masqué. */
+  lockOrganization?: boolean;
   onCreated?: (schedule: UsageSchedule) => void;
 }) {
   const create = useCreateSchedule();
@@ -164,7 +167,7 @@ export function ScheduleFormDialog({
               control={form.control}
               name="organizationId"
               render={({ field, fieldState }) => (
-                <Field className="gap-1.5" data-invalid={fieldState.invalid}>
+                <Field className="gap-1.5" data-invalid={fieldState.invalid} hidden={lockOrganization}>
                   <FieldLabel htmlFor="schedule-organization">Organisation</FieldLabel>
                   <OrganizationSelect
                     id="schedule-organization"

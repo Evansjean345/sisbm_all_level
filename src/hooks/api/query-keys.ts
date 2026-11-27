@@ -1,8 +1,10 @@
 import type { ActivityParams, AdminCommandListParams, AdminStatsParams } from "@/types/admin";
 import type { AuditLogListParams } from "@/types/audit";
+import type { TripReportParams } from "@/types/client-space";
 import type { DeviceListParams } from "@/types/device";
 import type { DriverListParams } from "@/types/driver";
 import type { GroupKind, GroupListParams } from "@/types/group";
+import type { IncidentListParams } from "@/types/incident";
 import type { OfferListParams } from "@/types/offer";
 import type { OrganizationListParams } from "@/types/organization";
 import type { ScheduleHistoryParams, ScheduleListParams } from "@/types/schedule";
@@ -111,6 +113,16 @@ export const queryKeys = {
       ["audit", "actions", params] as const,
     organization: (id: string, params: AuditLogListParams) => ["audit", "organization", id, params] as const,
     group: (kind: GroupKind, id: string, params: AuditLogListParams) => ["audit", "group", kind, id, params] as const,
+  },
+  /** Espace client (SuperAdmin) : résumé d'une organisation et rapport de ses trajets. */
+  clientSpace: {
+    all: ["client-space"] as const,
+    summary: (organizationId: string) => ["client-space", "summary", organizationId] as const,
+    tripReport: (params: TripReportParams) => ["client-space", "trip-report", params] as const,
+  },
+  incidents: {
+    all: ["incidents"] as const,
+    list: (params: IncidentListParams) => ["incidents", "list", params] as const,
   },
   flespi: {
     all: ["flespi"] as const,
