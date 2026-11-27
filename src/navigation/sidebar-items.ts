@@ -79,6 +79,12 @@ export const sidebarItems: NavGroup[] = [
         icon: Handshake,
         subItems: [
           {
+            id: "space_clients",
+            title: "Espace clients",
+            url: "/dashboard/space_clients",
+            icon: UserGroupIcon,
+          },
+          {
             id: "offers",
             title: "Catalogue des offres",
             url: "/dashboard/offers",
