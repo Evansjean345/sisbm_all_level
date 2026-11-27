@@ -13,7 +13,6 @@ import {
   Map as MapIcon,
   MapPinned,
   Package,
-  PackagePlus,
   ReceiptText,
   ScrollText,
   Send,
@@ -253,6 +252,7 @@ export const sidebarItems: NavGroup[] = [
       },
     ],
   },
+  /*
   {
     id: 2,
     label: "Rubriques client",
@@ -297,4 +297,5 @@ export const sidebarItems: NavGroup[] = [
       },
     ],
   },
+*/
 ];

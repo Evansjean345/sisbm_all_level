@@ -46,9 +46,7 @@ export function AppSidebar({ items, ...props }: React.ComponentProps<typeof Side
                     <div className="text-[10px] text-[#10B981] font-extrabold">live</div>
                   </div>
                 </div>
-              ) : (
-                <></>
-              )}
+              ) : null}
             </Link>
           </SidebarMenuItem>
         </SidebarMenu>
